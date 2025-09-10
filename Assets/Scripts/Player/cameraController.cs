@@ -6,7 +6,8 @@ public class cameraController : MonoBehaviour
 {
     public Transform player;
 
-    public float sensitivity = 150f;
+    public float mouseSensitivity = 150f;
+    public float controllerSensitivity = 150f;
     public float verticalClamp = 80.0f;
     public float distance = 3.5f;
     public float height = 1.5f;
@@ -42,7 +43,16 @@ public class cameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        m_lookAmt = m_lookAction.ReadValue<Vector2>() * sensitivity * Time.deltaTime;
+        Vector2 lookInput = m_lookAction.ReadValue<Vector2>();
+
+        if (Mouse.current != null && Mouse.current.delta.ReadValue() != Vector2.zero)
+        {
+            m_lookAmt = lookInput * mouseSensitivity * Time.deltaTime;
+        }
+        else
+        {
+            m_lookAmt = lookInput * controllerSensitivity;
+        }
 
         yaw += m_lookAmt.x;
         pitch -= m_lookAmt.y;

@@ -65,7 +65,7 @@ public class playerController : MonoBehaviour
     {
         CheckGrounded();
         
-        if (jumpAction.WasPressedThisFrame() && isGrounded)
+        if (jumpAction.WasPressedThisFrame() && isGrounded && !jumpQueued)
         {
             jumpQueued = true;
             animator.SetTrigger("Jump");
@@ -77,15 +77,16 @@ public class playerController : MonoBehaviour
     private void FixedUpdate()
     {
         Move();
-        HandleStepClimb();
         GravityMultiplier();
     }
 
     private void CheckGrounded()
     {
-        //Is grounded check
-        Vector3 origin = transform.position + Vector3.up * 0.1f;
-        bool hitGround = Physics.Raycast(origin, Vector3.down, groundCheckDistance + 0.1f, groundMask);
+        float radius = 0.25f;
+        float checkHeight = 0.05f;
+        Vector3 spherePos = transform.position + Vector3.up * checkHeight;
+
+        bool hitGround = Physics.CheckSphere(spherePos, radius, groundMask);
 
         if (hitGround)
         {
@@ -94,13 +95,14 @@ public class playerController : MonoBehaviour
 
         isGrounded = (Time.time - lastGroundedTime) <= coyoteTime;
 
-        if (steppingUp) isGrounded = true;
+        Color col = isGrounded ? Color.green : Color.red;
+        Debug.DrawRay(spherePos, Vector3.up * 0.2f, col);
 
-        //Distance player is from ground check
-        RaycastHit hit;
-        Physics.Raycast(origin, Vector3.down, out hit, Mathf.Infinity, groundMask);
-        groundDistance = hit.distance;
-        animator.SetFloat("groundDistance", Mathf.Lerp(animator.GetFloat("groundDistance"), groundDistance, Time.deltaTime * 10.0f));
+        if (Physics.Raycast(spherePos, Vector3.down, out RaycastHit hit, 2.0f, groundMask))
+        {
+            groundDistance = hit.distance;
+            animator.SetFloat("groundDistance", Mathf.Lerp(animator.GetFloat("groundDistance"), groundDistance, Time.deltaTime * 10.0f));
+        }
     }
 
     private void Move()
@@ -148,10 +150,8 @@ public class playerController : MonoBehaviour
 
     private void GravityMultiplier()
     {
-        if (!isGrounded)
-        {
-            rb.AddForce(Vector3.down * gravityMultiplier, ForceMode.Acceleration);
-        }
+        float extra = isGrounded ? 1.0f : 2.5f;
+        rb.AddForce(Vector3.down * gravityMultiplier * extra, ForceMode.Acceleration);
     }
 
     public void Jump()
@@ -162,34 +162,5 @@ public class playerController : MonoBehaviour
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             jumpQueued = false;
         }
-    }
-
-    private void HandleStepClimb()
-    {
-        Vector3 moveDir = new Vector3(rb.linearVelocity.x, 0.0f, rb.linearVelocity.z).normalized;
-        if (moveDir.sqrMagnitude < 0.01f) return;
-
-        Vector3 originLower = transform.position + Vector3.up * 0.05f;
-        Vector3 originUpper = transform.position + Vector3.up * stepHeight;
-
-        if (Physics.Raycast(originLower, moveDir, out RaycastHit lowerHit, stepCheckDistance, groundMask))
-        {
-            if (!Physics.Raycast(originUpper, moveDir, stepCheckDistance, groundMask))
-            {
-                steppingUp = true;
-                rb.position += Vector3.up * stepSmooth * Time.fixedDeltaTime;
-            }
-            else
-            {
-                steppingUp = false;
-            }
-        }
-        else
-        {
-            steppingUp = false;
-        }
-
-        Debug.DrawRay(originLower, moveDir * stepCheckDistance, Color.red);
-        Debug.DrawRay(originUpper, moveDir * stepCheckDistance, Color.green);
     }
 }
