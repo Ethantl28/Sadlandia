@@ -8,10 +8,15 @@ public class cameraController : MonoBehaviour
 
     public float mouseSensitivity = 150f;
     public float controllerSensitivity = 150f;
-    public float verticalClamp = 80.0f;
+    public float verticalClampTop = 80.0f;
+    public float verticalClampBottom = -55.0f;
     public float distance = 3.5f;
     public float height = 1.5f;
     public float smoothTime = 0.1f;
+
+    public LayerMask collisionMask;
+    public float cameraRadius = 0.2f;
+    public float minDistance = 0.5f;
 
     public InputActionAsset InputActions;
 
@@ -56,15 +61,19 @@ public class cameraController : MonoBehaviour
 
         yaw += m_lookAmt.x;
         pitch -= m_lookAmt.y;
-        pitch = Mathf.Clamp(pitch, -verticalClamp, verticalClamp);
+        pitch = Mathf.Clamp(pitch, verticalClampBottom + 25.0f, verticalClampTop);
 
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0.0f);
-
         Vector3 target = player.position + Vector3.up * height;
 
         Vector3 offset = rotation * new Vector3(0.0f, 0.0f, -distance);
-
         Vector3 desiredPosition = target + offset;
+
+        if (Physics.SphereCast(target, cameraRadius, offset.normalized, out RaycastHit hit, distance, collisionMask))
+        {
+            float hitDist = Mathf.Max(hit.distance - cameraRadius, minDistance);
+            desiredPosition = target + offset.normalized * hitDist;
+        }
 
         transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref velocity, smoothTime);
 

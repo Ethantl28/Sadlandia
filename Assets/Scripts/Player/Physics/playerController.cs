@@ -1,4 +1,3 @@
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,10 +9,6 @@ public class playerController : MonoBehaviour
     public float acceleration = 10.0f;
     public float coyoteTime = 0.1f;
     public float gravityMultiplier = 1.0f;
-
-    public float stepHeight = 0.3f;
-    public float stepCheckDistance = 0.5f;
-    public float stepSmooth = 5.0f;
 
     public float jumpForce = 5.0f;
     public float groundCheckDistance = 0.2f;
