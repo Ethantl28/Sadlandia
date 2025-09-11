@@ -30,13 +30,19 @@ public class playerController : MonoBehaviour
     private float lastGroundedTime;
 
     private bool jumpQueued = false;
-    private bool steppingUp = false;
+    private bool wasGrounded = false;
+
+    private AbilityManager abilityManager;
+    private DoubleJump doubleJump;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+        abilityManager = GetComponent<AbilityManager>();
+        doubleJump = GetComponent<DoubleJump>();
 
         animator = GetComponent<Animator>();
 
@@ -59,11 +65,24 @@ public class playerController : MonoBehaviour
     private void Update()
     {
         CheckGrounded();
-        
-        if (jumpAction.WasPressedThisFrame() && isGrounded && !jumpQueued)
+
+        if (!wasGrounded && isGrounded)
         {
-            jumpQueued = true;
-            animator.SetTrigger("Jump");
+            PlayerEvents.Landed();
+        }
+        wasGrounded = isGrounded;
+
+        if (jumpAction.WasPressedThisFrame())
+        {
+            if (isGrounded && !jumpQueued)
+            {
+                jumpQueued = true;
+                animator.SetTrigger("Jump");
+            }
+            else if (!isGrounded && abilityManager.HasAbility<DoubleJump>() && !doubleJump.HasUsedAllJumps())
+            {
+                abilityManager.UseAbility<DoubleJump>();
+            }
         }
 
         UpdateAnimator();
@@ -157,5 +176,17 @@ public class playerController : MonoBehaviour
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             jumpQueued = false;
         }
+    }
+
+    public void ForceJump()
+    {
+        animator.SetTrigger("Jump");
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0.0f, rb.linearVelocity.z);
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+    }
+
+    public bool GetIsGrounded()
+    {
+        return isGrounded;
     }
 }
